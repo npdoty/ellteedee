@@ -20,26 +20,63 @@ from google.appengine.api import users
 import os
 from google.appengine.ext.webapp import template
 from google.appengine.ext import db
+import logging
+import math
 
 class Message(db.Model):
 	text = db.TextProperty()
 	views = db.IntegerProperty()
 	created = db.DateTimeProperty(auto_now_add=True)
+	blurred = db.IntegerProperty()
+	
+	white_list = ['\n']
+	
+	def toHtml(self):
+		html = '<span class="blurred">' + self.text[:self.blurred] + '</span>'
+		html += '<span class="original">' + self.text[self.blurred:] + '</span>'
+		
+		return html.replace('\n', '<br/>')
+	
+	def blur(self, number, should_put):
+		# currently ignoring the number parameter, but ideally should blur that number of characters
+		if not self.blurred:
+			self.blurred = 0
+		
+		if self.text[self.blurred] not in self.white_list:
+			self.text = self.text[:self.blurred] + '?' + self.text[self.blurred+1:] # strings are immutable, who knew?
+		self.blurred = self.blurred + 1
+		
+		if should_put:
+			self.put()
+	
+	def percent_blurred(self):
+		return self.blurred * 1.0 / len(self.text)
 
 class MainHandler(webapp.RequestHandler):
-	def get(self):
+	def get(self, key=None):
 		# get the appropriate message
-		# (for now, just get the first message in the list)
-		message = Message.all().order('-created').get()
+		if key:
+			try:
+				m_key = db.Key.from_path('Message', int(key)) # maybe it's a numeric key?
+			except ValueError:
+				m_key = db.Key.from_path('Message', key) # or maybe it's a string key
+			message = Message.get(m_key)
+		else:
+			message = Message.all().order('-created').get()
+		
 		if message:
 			if not message.views:
 				message.views = 0
 			message.views = message.views + 1
-			message.put()
+			
+			# blur some of the message
+			message.blur(1, True)
 
-			template_values = {'message':message.text, 'views':message.views}
+			template_values = {'message': message.toHtml(), 'views':message.views, 'key': str(message.key().id_or_name()), 'color': int(math.floor((1.0 - message.percent_blurred()) * 255))}
 
 		else:
+			if key:
+				logging.warning('Tried to load key %s that does not exist.', key)
 			self.redirect('/add')
 			return
 	
@@ -54,16 +91,20 @@ class AddHandler(webapp.RequestHandler):
 
 	def post(self):
 		message = self.request.get('message')
+		key_name = self.request.get('key')
 		if message:
-			new_message = Message()
-			new_message.text = message
+			if key_name:
+				new_message = Message(key_name=key_name)
+			else:
+				new_message = Message()
+			new_message.text = message	# um, XSS
 			new_message.put()
 			self.redirect('/')
 		else:
 			self.redirect('/add')
 
 def main():
-	application = webapp.WSGIApplication([('/', MainHandler), ('/add', AddHandler)],
+	application = webapp.WSGIApplication([('/', MainHandler), ('/add', AddHandler), ('/k/(.+)', MainHandler)],
 										 debug=True)
 	util.run_wsgi_app(application)
 

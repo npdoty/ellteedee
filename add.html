@@ -2,21 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-	<title>Add a message</title>
+	<title>ell tee dee add</title>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.4/jquery-ui.min.js"></script>
+	<script>
+	  WebFontConfig = {
+		google: { families: [ 'Inconsolata' ] }
+	  };
+	  (function() {
+		var wf = document.createElement('script');
+		wf.src = ('https:' == document.location.protocol ? 'https' : 'http') +
+			'://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
+		wf.type = 'text/javascript';
+		wf.async = 'true';
+		var s = document.getElementsByTagName('script')[0];
+		s.parentNode.insertBefore(wf, s);
+	  })();
+	</script>
+	<style>
+	  .wf-loading body {
+		visibility: hidden;
+	  }
+	  .wf-active body {
+		visibility: visible;
+		font-family: 'Inconsolata';
+	  }
+	  .wf-inactive body {
+		visibility: visible;
+		font-family: monospace;
+	  }
+	</style>
+    
 	
 	<style>
+	body {
+		visibility: hidden;
+		font-family: 'Inconsolata';
+		text-align: center;
+		font-size: 20px;
+	}
+	
+	#container {
+		text-align: left;
+		display: inline-block;
+		padding: 10px;
+	}
+	
+	textarea {
+		font-family: 'Inconsolata';
+		font-size: 20px;
+		margin-top: 10px;
+		margin-bottom: 10px;
+		margin-right: 0px;
+	}
+	
+	#submit {
+		font-family: 'Inconsolata';
+		font-size: 20px;
+		float: right;
+		margin-right: 10px;
+	}
+	
+	#key {
+		font-family: 'Inconsolata';
+		font-size: 20px;
+	}
 	</style>
 	
 	<script>
-	  
 	</script>
 </head>
 <body>
     <form action="" method="post">
-        Enter a new message: <textarea name="message" placeholder="Put your message here"></textarea>
-        <input type="submit">
+	<div id="container">
+		<textarea name="message" 
+				  placeholder="Your message here"
+				  required
+				  autofocus
+				  cols="40"
+				  rows="12"></textarea>
+        <br/>
+		<input name="key" 
+			   id="key" 
+			   placeholder="Optional name"
+			   size="13">
+		<button type="submit" id="submit">Post</button>
+	</div>
     </form>
 </body>
 </html>
