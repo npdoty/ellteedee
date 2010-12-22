@@ -1,19 +1,4 @@
 #!/usr/bin/env python
-#
-# Copyright 2007 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#	  http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.api import users
@@ -22,35 +7,76 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import db
 import logging
 import math
+import random
+import re
 
 class Message(db.Model):
 	text = db.TextProperty()
 	views = db.IntegerProperty()
 	created = db.DateTimeProperty(auto_now_add=True)
 	blurred = db.IntegerProperty()
+	blur_type = db.StringProperty(default='random') # ['start', 'random', ] 
+	home_page = db.BooleanProperty(default=False)
+	has_characters = db.BooleanProperty(default=True)	# still has non-blurred letters
 	
-	white_list = ['\n']
+	blur_char = '_' # '_' is considered a blurred character
+	white_list = ['\n', blur_char]
 	
 	def toHtml(self):
-		html = '<span class="blurred">' + self.text[:self.blurred] + '</span>'
-		html += '<span class="original">' + self.text[self.blurred:] + '</span>'
+		def enclose_blurred(match):
+			return '</span><span class="blurred">' + match.group(0) + '</span><span class="original">'
+		html = re.sub('_+', enclose_blurred, self.text)
+		html = '<span class="original">' + html + '</span>'
 		
 		return html.replace('\n', '<br/>')
 	
 	def blur(self, number, should_put):
 		# currently ignoring the number parameter, but ideally should blur that number of characters
 		if not self.blurred:
-			self.blurred = 0
+			self.blurred = 0	# can't just set this to 0, need to count the number of white list characters that the message starts with
 		
-		if self.text[self.blurred] not in self.white_list:
-			self.text = self.text[:self.blurred] + '?' + self.text[self.blurred+1:] # strings are immutable, who knew?
+		if self.white_list_count() == len(self.text):	# is this message already completely blurred?
+			self.has_characters = False
+			self.home_page = False
+			self.put()
+			return
+		
+		if self.blur_type and self.blur_type == 'random':
+			index = random.randint(0,len(self.text)-1)
+			replaced = False
+			while not replaced:
+				replaced = self.blur_character(index)
+				index = index + 1
+				if index >= len(self.text):
+					index = 0
+		else:
+		    self.blur_character(self.blurred)
+			
 		self.blurred = self.blurred + 1
+		
+		if self.white_list_count() == len(self.text):
+			self.has_characters = False
+			self.home_page = False
 		
 		if should_put:
 			self.put()
 	
+	def white_list_count(self):
+		count = 0
+		for c in self.white_list:
+			count += self.text.count(c)
+		return count
+	
+	def blur_character(self, index):
+		if self.text[index] not in self.white_list:
+			self.text = self.text[:index] + self.blur_char + self.text[index+1:] # strings are immutable, who knew?
+			logging.info('Blurred character %d', index)
+			return True
+		else:
+			return False
+	
 	def percent_blurred(self):
-		return self.blurred * 1.0 / len(self.text)
+		return self.blurred * 1.0 / len(self.text)	# doesn't account for messages that start with blurred characters
 
 class MainHandler(webapp.RequestHandler):
 	def get(self, key=None):
@@ -61,8 +87,13 @@ class MainHandler(webapp.RequestHandler):
 			except ValueError:
 				m_key = db.Key.from_path('Message', key) # or maybe it's a string key
 			message = Message.get(m_key)
+		elif Message.all().filter('home_page =', True).count(limit=1):
+			message = Message.all().order('created').filter('home_page =', True).get()
+		elif Message.all().filter('has_characters =', True).count(limit=1):
+			message = Message.all().order('created').filter('has_characters =', True).get()
+			message.home_page = True
 		else:
-			message = Message.all().order('-created').get()
+			message = None
 		
 		if message:
 			if not message.views:

@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
 	<title>ell tee dee</title>
-	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.4/jquery-ui.min.js"></script>
+	<!-- <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.4/jquery-ui.min.js"></script> -->
 	<link href='http://fonts.googleapis.com/css?family=Inconsolata&subset=latin' rel='stylesheet' type='text/css'>
 	
 	<script>
@@ -22,14 +22,14 @@
 	  })();
 	</script>
 	<style>
-	  .wf-loading body {
+	  .wf-loading #message {
 		visibility: hidden;
 	  }
-	  .wf-active body {
+	  .wf-active #message {
 		visibility: visible;
 		font-family: 'Inconsolata';
 	  }
-	  .wf-inactive body {
+	  .wf-inactive #message {
 		visibility: visible;
 		font-family: monospace;
 	  }
@@ -41,46 +41,67 @@
 		visibility: hidden;
 		font-family: 'Inconsolata';
 		text-align: center;
-		#background-color: rgb({{color}},{{color}},{{color}});
+		background-color: white;
 	}
 	
 	#message {
 		text-align: left;
 	    display: inline-block;
-		#background-color: rgb({{color}},{{color}},{{color}});
 		background-color: white;
-		line-height: 102%;
+		color: black;
+		line-height: 122%;
 		font-size: 20px;
+		margin-top: 40px;
+		margin-left: 100px;
+		margin-right: 100px;
 	}
 	
 	#views {
 	    font-size: 20px;
-	    color: #eee;
+	    color: #ddd;
 		text-align: right;
 		margin-right: 10px;
 	}
 	
 	#views a {
-		color: #eee;
-		text-decoration: none;
-	}
-	#views a:hover {
 		color: #ddd;
 		text-decoration: none;
 	}
-	
+	#views a:hover {
+		color: #bbb;
+		text-decoration: none;
+	}
 		
 	.blurred {
-		background-color: #111;
+		background-color: #000;
+		color: #111;
 	}
 	
 	.original {
 	}
-	</style>
 	
-	<script>
-	  
-	</script>
+	/* optional white-on-black version, apply .night class to html tag */
+	.night body {
+		background-color: black;
+	}
+	.night #message {
+		color: white;
+		background-color: black;
+	}
+	.night #views {
+		color: #333;
+	}
+	.night #views a {
+		color: #333;
+	}
+	.night #views a:hover {
+		color: #555;
+	}
+	.night .blurred {
+		background-color: #000;
+		color: #111;
+	}
+	</style>
 </head>
 <body>
     <div id="message">{{ message }}<div id="views"><a href="/k/{{ key }}">{{ views }} views</a> | <a href="/add">create</a></div></div>
